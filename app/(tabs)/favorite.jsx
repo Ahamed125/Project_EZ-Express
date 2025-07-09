@@ -15,7 +15,7 @@ import {
   Platform
 } from 'react-native';
 import { db } from '../../Config/Firebaseonfig';
-import Shared from '../../Shared/Shared';
+import Share from '../../Shared/Share';
 import ItemList from '../../components/Home/ItemList';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../constant/Colors';
@@ -33,7 +33,7 @@ export default function Favorite() {
   const loadFavorites = async () => {
     try {
       setRefreshing(true);
-      const result = await Shared.GetFavList(user);
+      const result = await Share.GetFavList(user);
       const favIds = result?.favorites || [];
       
       if (favIds.length === 0) {

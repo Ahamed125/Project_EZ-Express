@@ -63,7 +63,8 @@ export default function Profile() {
     {
       icon: <Ionicons name="document-text" size={24} color="#10B981" />,
       label: 'My Orders',
-      onPress: () => router.push('/TrackOrders'),
+      // onPress: () => router.push('/order/TrackOrders'),
+      onPress: () => router.push('/track'),
     },
     {
       icon: <Ionicons name="settings" size={24} color="brown" />,

@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 
 import { db } from '../../Config/Firebaseonfig';
 import Colors from '../../constant/Colors';
-import OrderItem from './OrderItem';
+import OrderItem from '../../components/Order/OrderItem';
 
 const statusFilters = ['All', 'Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Completed', 'Cancelled'];
 

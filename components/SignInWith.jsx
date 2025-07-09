@@ -190,176 +190,113 @@
 
 
 
-// import React, { useCallback, useEffect } from 'react';
-// import { View, Text, Image, Pressable, ActivityIndicator,StyleSheet } from 'react-native';
-// import appleButton from './../assets/images/social-providers/apple.png';
-// import facebookButton from './../assets/images/social-providers/facebook.png';
-// import googleButton from './../assets/images/social-providers/google.png';
-
-// import * as WebBrowser from 'expo-web-browser';
-// import * as AuthSession from 'expo-auth-session';
-// import { useSSO } from '@clerk/clerk-expo';
-// import { router } from 'expo-router'; // Import router from expo-router
-
-// // Warm up the browser for better performance on Android
-// export const useWarmUpBrowser = () => {
-//   useEffect(() => {
-//     void WebBrowser.warmUpAsync();
-//     return () => {
-//       void WebBrowser.coolDownAsync();
-//     };
-//   }, []);
-// };
-
-// WebBrowser.maybeCompleteAuthSession();
-// const strategyIcons = {
-//   oauth_google: googleButton,
-//   oauth_apple: appleButton,
-//   oauth_facebook: facebookButton,
-// };
-
-// export default function SignInWith({ strategy }) {
-//   useWarmUpBrowser();
-//   const { startSSOFlow } = useSSO();
-//   const [isLoading, setIsLoading] = React.useState(false); // Add loading state
-
-//   const onPress = useCallback(async () => {
-//     setIsLoading(true); // Start loading
-//     try {
-//       const redirectUrl = AuthSession.makeRedirectUri({
-//         useProxy: true, // Required for Expo Go
-//       });
-
-//       const { createdSessionId, setActive, signIn, signUp } = await startSSOFlow({
-//         strategy: 'oauth_google',
-//         redirectUrl,
-//       });
-
-//       if (createdSessionId) {
-//         // Set the active session
-//         await setActive({ session: createdSessionId });
-
-//         // Navigate to the Home screen after successful login
-//          // Use `replace` to replace the current screen
-//          router.replace('/(tabs)/home')
-//       } else {
-//         // Handle missing requirements (e.g., MFA)
-//         if (signIn) {
-//           console.log('Sign-in requires additional steps:', signIn);
-//         } else if (signUp) {
-//           console.log('Sign-up requires additional steps:', signUp);
-//         }
-//       }
-//     } catch (err) {
-//       console.error('SSO Error:', err);
-//     } finally {
-//       setIsLoading(false); // Stop loading
-//     }
-//   }, [startSSOFlow]);
 
 
-//     return (
-//     <Pressable onPress={onPress} style={styles.button}>
-//       <Image
-//         source={strategyIcons[strategy]}
-//         style={styles.icon}
-//         resizeMode="contain"
-//       />
-//     </Pressable>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   button: {
-//     width: 60,
-//     height: 60,
-//     borderRadius: 30,
-//     backgroundColor: '#fff',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.1,
-//     shadowRadius: 4,
-//     elevation: 2,
-//   },
-//   icon: {
-//     width: 30,
-//     height: 30,
-//   },
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { useSSO } from '@clerk/clerk-expo';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect } from 'react';
-
-import { Image, Pressable } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Pressable, Image, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import appleButton from './../assets/images/social-providers/apple.png';
 import facebookButton from './../assets/images/social-providers/facebook.png';
 import googleButton from './../assets/images/social-providers/google.png';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { useSSO } from '@clerk/clerk-expo';
+import { router } from 'expo-router';
 
-export const useWarmUpBrowser = () => {
-  useEffect(() => {
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
-  }, []);
-};
-
-WebBrowser.maybeCompleteAuthSession();
-
+// Strategy icons mapping
 const strategyIcons = {
   oauth_google: googleButton,
   oauth_apple: appleButton,
   oauth_facebook: facebookButton,
 };
 
+// Platform-aware browser warmup
+export const useWarmUpBrowser = () => {
+  useEffect(() => {
+    const warmUp = async () => {
+      try {
+        if (Platform.OS !== 'web' && WebBrowser.warmUpAsync) {
+          await WebBrowser.warmUpAsync();
+        }
+      } catch (error) {
+        console.log('Browser warmup error:', error);
+      }
+    };
+
+    warmUp();
+
+    return () => {
+      if (Platform.OS !== 'web' && WebBrowser.coolDownAsync) {
+        WebBrowser.coolDownAsync().catch(() => {});
+      }
+    };
+  }, []);
+};
+
+WebBrowser.maybeCompleteAuthSession();
+
 export default function SignInWith({ strategy }) {
   useWarmUpBrowser();
-
   const { startSSOFlow } = useSSO();
+  const [isLoading, setIsLoading] = useState(false);
 
   const onPress = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const { createdSessionId, setActive, signIn, signUp } =
-        await startSSOFlow({
-          strategy,
-          redirectUrl: AuthSession.makeRedirectUri(),
-        });
+      const redirectUrl = AuthSession.makeRedirectUri({
+        useProxy: true,
+      });
 
-        
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy,
+        redirectUrl,
+      });
 
       if (createdSessionId) {
-        setActive({ session: createdSessionId });
+        await setActive({ session: createdSessionId });
+        router.replace('/(tabs)/home');
       }
     } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('SSO Error:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [startSSOFlow, strategy]);
 
   return (
-    <Pressable onPress={onPress}>
-      <Image
-        source={strategyIcons[strategy]}
-        style={{ width: 62, height: 62 }}
-        resizeMode='contain'
-      />
+    <Pressable 
+      onPress={onPress} 
+      style={styles.button}
+      disabled={isLoading}
+    >
+      {isLoading ? (
+        <ActivityIndicator size="small" color="#000" />
+      ) : (
+        <Image
+          source={strategyIcons[strategy]}
+          style={styles.icon}
+          resizeMode="contain"
+        />
+      )}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  icon: {
+    width: 30,
+    height: 30,
+  },
+});

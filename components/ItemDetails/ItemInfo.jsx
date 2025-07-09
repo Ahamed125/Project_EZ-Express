@@ -1,68 +1,91 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Alert, Image, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Share, StyleSheet, Text, TouchableOpacity, View, Modal, Pressable } from 'react-native';
 import Colors from '../../constant/Colors';
 import MarkFav from '../MarkFav';
-import { UserProfile } from '@clerk/clerk-expo/web';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 export default function ItemInfo({ itm }) {
-  const router=useRouter();
-  const handleShare = async () => {
-    try {
-      const result = await Share.share({
-        message: `Check out this adorable jewellery: ${itm.name}\n\n${itm.imageUrl}`,
-        title: `Share ${itm.name}'s profile`,
-        url: itm.imageUrl // Some platforms may use this
-      });
+  const router = useRouter();
+  const [previewVisible, setPreviewVisible] = useState(false);
 
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          // Shared with activity type
-          console.log('Shared with', result.activityType);
-        } else {
-          // Shared
-          console.log('Shared successfully');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        // Dismissed
-        console.log('Share dismissed');
+  const shareImage = async () => {
+    try {
+      const fileUri = FileSystem.cacheDirectory + 'shared-image.jpg';
+      
+      // Download the image first
+      const { uri } = await FileSystem.downloadAsync(
+        itm.imageUrl,
+        fileUri
+      );
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          dialogTitle: `Share ${itm.name}`,
+          mimeType: 'image/jpeg',
+          UTI: 'public.jpeg',
+        });
+      } else {
+        Alert.alert('Sharing is not available on this device');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to share pet information');
-      console.error('Error sharing:', error);
+      console.error('Error sharing image:', error);
+      Alert.alert('Error', 'An error occurred while sharing the image.');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Image 
-        source={{ uri: itm.imageUrl }} 
-        style={styles.petImage}
-        resizeMode="cover"
-      />
+      <TouchableOpacity onPress={() => setPreviewVisible(true)}>
+        <Image 
+          source={{ uri: itm.imageUrl }} 
+          style={styles.petImage}
+          resizeMode="cover"
+        />
+      </TouchableOpacity>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={previewVisible}
+        onRequestClose={() => setPreviewVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Pressable 
+            style={styles.modalBackground} 
+            onPress={() => setPreviewVisible(false)}
+          />
+          <Image 
+            source={{ uri: itm.imageUrl }} 
+            style={styles.modalImage}
+            resizeMode="contain"
+          />
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => setPreviewVisible(false)}
+          >
+            <Ionicons name="close" size={30} color={Colors.WHITE} />
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       <View style={styles.infoContainer}>
         <View style={styles.textContainer}>
           <Text style={styles.petName}>
             {itm?.name}
           </Text>
-                   <TouchableOpacity
-                    // style={{marginLeft:230,marginBottom:3,display:'flex',flexDirection:'row'}}
-                    style={styles.addressContainer}
-                    onPress={() => router.push('/cart')}
-                  >
-                    <Ionicons name="cart-outline" size={35} color="blue" />
-                  </TouchableOpacity>
-          {/* <View style={styles.addressContainer}>
-            <Ionicons name="location" size={16} color={Colors.GRAY} />
-            <Text style={styles.petAddress}>
-              {itm?.address}
-            </Text>
-          </View> */}
+          <TouchableOpacity
+            style={styles.addressContainer}
+            onPress={() => router.push('/cart')}
+          >
+            <Ionicons name="cart-outline" size={35} color="blue" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.actionsContainer}>
-          <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+          <TouchableOpacity onPress={shareImage} style={styles.shareButton}>
             <Ionicons name="share-social" size={24} color={Colors.PRIMARY} />
           </TouchableOpacity>
           <MarkFav itm={itm} />
@@ -121,5 +144,30 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     padding: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.9)',
+  },
+  modalBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalImage: {
+    width: '90%',
+    height: '80%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    padding: 5,
   }
 });

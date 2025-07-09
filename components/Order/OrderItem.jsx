@@ -1,33 +1,5 @@
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Colors from '../../constant/Colors';
@@ -60,7 +32,7 @@ const OrderItem = ({ order }) => {
     <TouchableOpacity 
       style={styles.container}
       onPress={() => router.push({
-        pathname: '/OrderDetails',
+        pathname: '/orders',
         params: { orderId: order.id }
       })}
     >

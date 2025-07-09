@@ -1,41 +1,64 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useUser } from '@clerk/clerk-expo';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { collection, doc, getDocs, onSnapshot, query } from 'firebase/firestore';
+import { useEffect, useRef, useState } from 'react';
 import {
-  FlatList,
-  Text,
-  TextInput,
-  View,
   ActivityIndicator,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
+  Animated,
+  FlatList,
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   PanResponder,
-  Animated,
+  Platform,
   Pressable,
-  ImageBackground
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { collection, getDocs, query } from 'firebase/firestore';
-import { db } from '../../Config/Firebaseonfig';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Colors from '../../constant/Colors';
-import MarkFav from '../../components/MarkFav';
 import MarkCart from '../../components/MarkCart';
-import { useRouter } from 'expo-router';
+import MarkFav from '../../components/MarkFav';
+import { db } from '../../Config/Firebaseonfig';
+import Colors from '../../constant/Colors';
 
 export default function Explore() {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All'); // Default to All
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [categories, setCategories] = useState([]);
   const [showCategoryOptions, setShowCategoryOptions] = useState(false);
   const [loader, setLoader] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+  const { user } = useUser();
 
   useEffect(() => {
     fetchItems();
+    setupCartListener();
   }, []);
+
+  // Real-time cart listener
+  const setupCartListener = () => {
+    if (!user?.primaryEmailAddress?.emailAddress) return;
+
+    const email = user.primaryEmailAddress.emailAddress;
+    const docRef = doc(db, 'UserCartItem', email);
+
+    const unsubscribe = onSnapshot(docRef, (doc) => {
+      const data = doc.data();
+      const count = data?.cart ? Object.keys(data.cart).length : 0;
+      setCartItemCount(count);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  };
 
   const fetchItems = async () => {
     setLoader(true);
@@ -51,7 +74,6 @@ export default function Explore() {
         if (data.category) categorySet.add(data.category);
       });
 
-      // Add "All" as first category option
       setCategories(['All', ...Array.from(categorySet)]);
       setItems(itemList);
       setFilteredItems(itemList);
@@ -104,46 +126,44 @@ export default function Explore() {
   ).current;
 
   const renderItem = ({ item }) => (
-  <ImageBackground
-    source={require('../../assets/images/background.jpg')} 
-    style={styles.cardWrapper}
-    imageStyle={{ borderRadius: 16 }} // Optional: match card border radius
-    resizeMode="cover"
-  >
-    <TouchableOpacity
-      style={{ flex: 1 }}
-      activeOpacity={0.9}
-      onPress={() =>
-        router.push({
-          pathname: '/item-details',
-          params: {
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            category:item.category,
-            description: item.description,
-            imageUrl: item.imageUrl,
-            email: item.email,
-            userImage: item.userImage,
-            username: item.username,
-          },
-        })
-      }
+    <ImageBackground
+      source={require('../../assets/images/background.jpg')} 
+      style={styles.cardWrapper}
+      imageStyle={{ borderRadius: 16 }}
+      resizeMode="cover"
     >
-      <Image source={{ uri: item.imageUrl }} style={styles.image} />
-      <View style={styles.cardContent}>
-        <View style={styles.nameFavRow}>
-          <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-          <MarkFav itm={item} />
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        activeOpacity={0.9}
+        onPress={() =>
+          router.push({
+            pathname: '/item-details',
+            params: {
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              category: item.category,
+              description: item.description,
+              imageUrl: item.imageUrl,
+              email: item.email,
+              userImage: item.userImage,
+              username: item.username,
+            },
+          })
+        }
+      >
+        <Image source={{ uri: item.imageUrl }} style={styles.image} />
+        <View style={styles.cardContent}>
+          <View style={styles.nameFavRow}>
+            <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+            <MarkFav itm={item} />
+          </View>
+          <Text style={styles.itemPrice}>RS: {item.price}</Text>
+          <MarkCart itm={item} />
         </View>
-        <Text style={styles.itemPrice}>RS: {item.price}</Text>
-        
-        <MarkCart itm={item} />
-      </View>
-    </TouchableOpacity>
-  </ImageBackground>
-);
-
+      </TouchableOpacity>
+    </ImageBackground>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -192,13 +212,18 @@ export default function Explore() {
         </View>
       )}
 
-      {/* Draggable Cart Icon */}
+      {/* Draggable Cart Icon with Count Badge */}
       <Animated.View
         {...panResponder.panHandlers}
         style={[pan.getLayout(), styles.cartButton]}
       >
-        <Pressable onPress={() => router.push('/cart')}>
+        <Pressable onPress={() => router.push('/cart')} style={styles.cartPressable}>
           <MaterialCommunityIcons name="cart" size={28} color="white" />
+          {cartItemCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartItemCount}</Text>
+            </View>
+          )}
         </Pressable>
       </Animated.View>
 
@@ -357,5 +382,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     zIndex: 100,
+  },
+  cartPressable: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    right: -5,
+    top: -5,
+    backgroundColor: Colors.RED,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

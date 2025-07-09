@@ -55,7 +55,7 @@
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { useFonts } from 'expo-font';
-import { Slot, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {
@@ -64,11 +64,11 @@ export default function RootLayout() {
     'outfit-bold': require('./../assets/fonts/Outfit-Bold.ttf'),
     'outfit-medium': require('./../assets/fonts/Outfit-Medium.ttf'),
   });
-  const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  // const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-    if (!publishableKey) {
-    throw new Error('Add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env');
-  }
+  //   if (!publishableKey) {
+  //   throw new Error('Add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env');
+  // }
 
   if (!fontsLoaded) {
     return (
@@ -79,7 +79,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+    <ClerkProvider  tokenCache={tokenCache}>
       <Stack >
         {/* <Slot /> */}
     <Stack.Screen name="chat/index" options={{ headerShown: true}} />
@@ -91,10 +91,11 @@ export default function RootLayout() {
             <Stack.Screen name="change/index" options={{ headerShown: true,headerTitle:''}} />
 
      <Stack.Screen name="index" options={{ headerShown: false}} />
-         <Stack.Screen name="(cart)/cart" options={{ headerShown: true,headerTitle:'My Cart'}} />
+         <Stack.Screen name="cart/index" options={{ headerShown: true,headerTitle:'My Cart'}} />
                   <Stack.Screen name="help/index" options={{ headerShown: true,headerTitle:'Help Center'}} />
 
-                  <Stack.Screen name="(order)/TrackOrders" options={{ headerShown: true,headerTitle:'My Orders'}} />
+                  <Stack.Screen name="track/index" options={{ headerShown: true,headerTitle:'My Orders'}} />
+                  <Stack.Screen name="orders/index" options={{ headerShown: true,headerTitle:'Order Details'}} />
                          <Stack.Screen name="(auth)" options={{ headerShown: false}} />
                           <Stack.Screen name="item-details/index" options={{ headerShown: true, headerTintColor:'black',headerTitle:'Item Details'}} />
 

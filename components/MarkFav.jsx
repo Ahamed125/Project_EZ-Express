@@ -56,7 +56,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@clerk/clerk-expo';
-import Shared from '../Shared/Shared';
+import Share from './../Shared/Share'
 
 export default function MarkFav({ itm, color = 'black', size = 30 }) {
   const { user } = useUser();
@@ -69,7 +69,7 @@ export default function MarkFav({ itm, color = 'black', size = 30 }) {
 
   const checkFavoriteStatus = async () => {
     try {
-      const result = await Shared.GetFavList(user);
+      const result = await Share.GetFavList(user);
       setIsFavorite(result?.favorites?.includes(itm?.id) || false);
     } catch (error) {
       console.error("Error checking favorite status:", error);
@@ -81,7 +81,7 @@ export default function MarkFav({ itm, color = 'black', size = 30 }) {
     setLoading(true);
     
     try {
-      const result = await Shared.GetFavList(user);
+      const result = await Share.GetFavList(user);
       let currentFavorites = result?.favorites || [];
       
       if (isFavorite) {
@@ -92,7 +92,7 @@ export default function MarkFav({ itm, color = 'black', size = 30 }) {
         }
       }
       
-      await Shared.UpdateFav(user, currentFavorites);
+      await Share.UpdateFav(user, currentFavorites);
       setIsFavorite(!isFavorite);
     } catch (error) {
       console.error("Error toggling favorite:", error);

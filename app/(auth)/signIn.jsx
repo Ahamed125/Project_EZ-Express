@@ -151,7 +151,7 @@
 
 
 
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -160,6 +160,7 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Button,
 } from 'react-native';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -270,11 +271,14 @@ export default function SignInScreen() {
         <SignInWith strategy="oauth_apple" />
         <SignInWith strategy="oauth_facebook" />
       </View>
+       
+
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Don't have an account?</Text>
         <Link href="/signUp" style={styles.footerLink}>Sign Up</Link>
       </View>
+    
     </KeyboardAvoidingView>
   );
 }
